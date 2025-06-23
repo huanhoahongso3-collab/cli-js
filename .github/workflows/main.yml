@@ -42,8 +42,10 @@ jobs:
       - name: 💾 Fetch prebuilt Node.js binary
         run: |
           mkdir -p "$HOME/.pkg-cache/v3.2"
-          curl -L "${{ matrix.url }}" -o "$HOME/.pkg-cache/v3.2/fetched-v10.24.1-${{ matrix.target##*- }}"
-          chmod +x "$HOME/.pkg-cache/v3.2/fetched-v10.24.1-${{ matrix.target##*- }}"
+          platform="${{ matrix.target }}"
+          arch="${platform#node10-}"
+          curl -L "${{ matrix.url }}" -o "$HOME/.pkg-cache/v3.2/fetched-v10.24.1-${arch}"
+          chmod +x "$HOME/.pkg-cache/v3.2/fetched-v10.24.1-${arch}"
 
       - name: 🔨 Build binary using cached Node.js 10
         working-directory: banana
