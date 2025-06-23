@@ -9,35 +9,40 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    name: Build on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        node-version: [16]
-    name: Build for ${{ matrix.os }}
+        node: [16]
+
     steps:
-      - name: Checkout repository
+      - name: 📦 Checkout Repository
         uses: actions/checkout@v3
 
-      - name: Setup Node.js
+      - name: 🔧 Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: ${{ matrix.node }}
 
-      - name: Install pkg
+      - name: 📥 Install pkg
         run: npm install -g pkg
 
-      - name: Install dependencies
+      - name: 📦 Install banana dependencies
         working-directory: banana
         run: npm install
 
-      - name: Build executable
+      - name: 🛠️ Build executable with pkg
         working-directory: banana
         run: |
-          pkg . --targets node${{ matrix.node-version }}-${{ runner.os == 'Windows' && 'win' || runner.os == 'macOS' && 'macos' || 'linux' }}-x64 --output banana-${{ runner.os }}
+          OS_NAME="${{ runner.os == 'Linux' && 'linux' || runner.os == 'Windows' && 'win' || 'macos' }}"
+          OUTPUT_NAME="banana-${OS_NAME}"
+          pkg . --targets node${{ matrix.node }}-${OS_NAME}-x64 --output $OUTPUT_NAME
 
-      - name: Upload artifact
+      - name: 📤 Upload binary artifact
         uses: actions/upload-artifact@v4
         with:
-          name: banana-${{ runner.os }}
+          name: banana-${{ runner.os }}-${{ github.run_id }}
           path: banana/banana-*
+          if-no-files-found: error
+          overwrite: true
