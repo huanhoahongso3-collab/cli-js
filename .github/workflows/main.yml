@@ -1,4 +1,4 @@
-name: Build Banana CLI (Compressed Native Executables)
+name: Build Banana CLI (Auto Platform, Max Compression)
 
 on:
   workflow_dispatch:
@@ -18,34 +18,42 @@ jobs:
       - name: 📥 Checkout repo
         uses: actions/checkout@v3
 
-      - name: 🧰 Setup Node.js
+      - name: 🧰 Setup Node.js for install
         uses: actions/setup-node@v3
         with:
           node-version: 18
 
-      - name: 📦 Install pkg
+      - name: 📦 Install pkg globally
         run: npm install -g pkg
 
-      - name: 📦 Install dependencies
+      - name: 📦 Install CLI dependencies
         working-directory: banana
         run: npm install
 
-      - name: 🔨 Build binary (auto-detect target)
+      - name: 🔨 Build binary using pkg
         working-directory: banana
-        run: |
-          output="banana-${{ matrix.os }}$( [[ '${{ matrix.os }}' == 'win' ]] && echo '.exe' )"
-          pkg . --output $output
         shell: bash
-
-      - name: 🗜️ Compress binary with UPX (best settings)
         run: |
+          if [ "${{ matrix.os }}" = "win" ]; then
+            output="banana-win.exe"
+          else
+            output="banana-${{ matrix.os }}"
+          fi
+          pkg . --output "$output"
+
+      - name: 🗜️ Compress binary with UPX
+        shell: bash
+        run: |
+          if [ "${{ matrix.os }}" = "win" ]; then
+            output="banana-win.exe"
+          else
+            output="banana-${{ matrix.os }}"
+          fi
           sudo apt-get update && sudo apt-get install -y upx-ucl
-          output="banana-${{ matrix.os }}$( [[ '${{ matrix.os }}' == 'win' ]] && echo '.exe' )"
-          upx --best --lzma banana/$output
-        shell: bash
+          upx --best --lzma "banana/$output"
 
-      - name: 📤 Upload artifact
+      - name: 📤 Upload final compressed binary
         uses: actions/upload-artifact@v4
         with:
           name: banana-${{ matrix.os }}-${{ github.run_id }}
-          path: banana/banana-${{ matrix.os }}*
+          path: banana/banana-*
