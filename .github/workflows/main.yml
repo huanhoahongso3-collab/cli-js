@@ -41,9 +41,10 @@ jobs:
 
       - name: 💾 Fetch prebuilt Node.js binary
         run: |
-          mkdir -p ~/.pkg-cache/v3.4
-          curl -L ${{ matrix.url }} -o ~/.pkg-cache/v3.4/${{ matrix.url##*/ }}
-          chmod +x ~/.pkg-cache/v3.4/${{ matrix.url##*/ }}
+          mkdir -p "$HOME/.pkg-cache/v3.4"
+          filename=$(basename "${{ matrix.url }}")
+          curl -L "${{ matrix.url }}" -o "$HOME/.pkg-cache/v3.4/$filename"
+          chmod +x "$HOME/.pkg-cache/v3.4/$filename"
 
       - name: 🔨 Build binary using cached Node.js 10
         working-directory: banana
