@@ -1,4 +1,4 @@
-name: Build Banana CLI (Node.js 13 via Mirror)
+name: Build Banana CLI (Node.js 14, All Platforms)
 
 on:
   workflow_dispatch:
@@ -14,23 +14,20 @@ jobs:
       matrix:
         include:
           - os: linux
-            target: node13-linux-x64
+            target: node14-linux-x64
             output: banana-linux
-            url: https://github.com/leaningtech/pkg-fetch-mirror/releases/download/v3.4/node-v13.14.0-linux-x64
           - os: macos
-            target: node13-macos-x64
+            target: node14-macos-x64
             output: banana-macos
-            url: https://github.com/leaningtech/pkg-fetch-mirror/releases/download/v3.4/node-v13.14.0-macos-x64
           - os: win
-            target: node13-win-x64
+            target: node14-win-x64
             output: banana-win7.exe
-            url: https://github.com/leaningtech/pkg-fetch-mirror/releases/download/v3.4/node-v13.14.0-win-x64
 
     steps:
-      - name: 📥 Checkout repo
+      - name: 📥 Checkout repository
         uses: actions/checkout@v3
 
-      - name: 🧰 Setup Node.js
+      - name: 🧰 Setup Node.js for pkg and install
         uses: actions/setup-node@v3
         with:
           node-version: 18
@@ -42,24 +39,17 @@ jobs:
         working-directory: banana
         run: npm install
 
-      - name: 💾 Fetch Node.js 13 binary manually
-        run: |
-          mkdir -p ~/.pkg-cache/v3.4
-          filename=$(basename "${{ matrix.url }}")
-          curl -L "${{ matrix.url }}" -o "$HOME/.pkg-cache/v3.4/fetched-v13.14.0-${{ matrix.os }}-x64"
-          chmod +x "$HOME/.pkg-cache/v3.4/fetched-v13.14.0-${{ matrix.os }}-x64"
-
-      - name: 🔨 Build binary with pkg (Node.js 13)
+      - name: 🔨 Build binary with pkg (Node.js 14)
         working-directory: banana
         run: |
           pkg . --targets ${{ matrix.target }} --output ${{ matrix.output }}
 
-      - name: 🗜️ Compress with UPX
+      - name: 🗜️ Compress binary with UPX
         run: |
           sudo apt-get update && sudo apt-get install -y upx-ucl
           upx --best --lzma banana/${{ matrix.output }}
 
-      - name: 📤 Upload final binary
+      - name: 📤 Upload compressed binary
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.output }}-${{ github.run_id }}
