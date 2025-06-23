@@ -1,4 +1,4 @@
-name: Build Banana CLI (Win 7+, Linux, macOS)
+name: Build Banana CLI (Compressed Native Executables)
 
 on:
   workflow_dispatch:
@@ -12,19 +12,13 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        include:
-          - target: node13-win-x64
-            name: banana-win7.exe
-          - target: node16-linux-x64
-            name: banana-linux
-          - target: node16-macos-x64
-            name: banana-macos
+        os: [linux, macos, win]
 
     steps:
-      - name: 📥 Checkout
+      - name: 📥 Checkout repo
         uses: actions/checkout@v3
 
-      - name: 🧰 Setup Node.js for pkg + install
+      - name: 🧰 Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: 18
@@ -32,22 +26,26 @@ jobs:
       - name: 📦 Install pkg
         run: npm install -g pkg
 
-      - name: 📦 Install Banana CLI dependencies
+      - name: 📦 Install dependencies
         working-directory: banana
         run: npm install
 
-      - name: 🔨 Build binary with pkg
+      - name: 🔨 Build binary (auto-detect target)
         working-directory: banana
         run: |
-          pkg . --targets ${{ matrix.target }} --output ${{ matrix.name }}
+          output="banana-${{ matrix.os }}$( [[ '${{ matrix.os }}' == 'win' ]] && echo '.exe' )"
+          pkg . --output $output
+        shell: bash
 
-      - name: 🗜️ Compress binary with UPX
+      - name: 🗜️ Compress binary with UPX (best settings)
         run: |
           sudo apt-get update && sudo apt-get install -y upx-ucl
-          upx --best --lzma banana/${{ matrix.name }}
+          output="banana-${{ matrix.os }}$( [[ '${{ matrix.os }}' == 'win' ]] && echo '.exe' )"
+          upx --best --lzma banana/$output
+        shell: bash
 
-      - name: 📤 Upload final binary
+      - name: 📤 Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.name }}-${{ github.run_id }}
-          path: banana/${{ matrix.name }}
+          name: banana-${{ matrix.os }}-${{ github.run_id }}
+          path: banana/banana-${{ matrix.os }}*
