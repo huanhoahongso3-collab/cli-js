@@ -1,4 +1,4 @@
-name: Build Banana CLI (Auto Platform, Max Compression)
+name: Build Banana CLI (Node.js 13, Compressed)
 
 on:
   workflow_dispatch:
@@ -12,10 +12,19 @@ jobs:
     runs-on: ubuntu-22.04
     strategy:
       matrix:
-        os: [linux, macos, win]
+        include:
+          - os: linux
+            target: node13-linux-x64
+            output: banana-linux
+          - os: macos
+            target: node13-macos-x64
+            output: banana-macos
+          - os: win
+            target: node13-win-x64
+            output: banana-win7.exe
 
     steps:
-      - name: 📥 Checkout repo
+      - name: 📥 Checkout repository
         uses: actions/checkout@v3
 
       - name: 🧰 Setup Node.js for install
@@ -23,37 +32,25 @@ jobs:
         with:
           node-version: 18
 
-      - name: 📦 Install pkg globally
+      - name: 📦 Install pkg
         run: npm install -g pkg
 
       - name: 📦 Install CLI dependencies
         working-directory: banana
         run: npm install
 
-      - name: 🔨 Build binary using pkg
+      - name: 🔨 Build Node.js 13 binary
         working-directory: banana
-        shell: bash
         run: |
-          if [ "${{ matrix.os }}" = "win" ]; then
-            output="banana-win.exe"
-          else
-            output="banana-${{ matrix.os }}"
-          fi
-          pkg . --output "$output"
+          pkg . --targets ${{ matrix.target }} --output ${{ matrix.output }}
 
       - name: 🗜️ Compress binary with UPX
-        shell: bash
         run: |
-          if [ "${{ matrix.os }}" = "win" ]; then
-            output="banana-win.exe"
-          else
-            output="banana-${{ matrix.os }}"
-          fi
           sudo apt-get update && sudo apt-get install -y upx-ucl
-          upx --best --lzma "banana/$output"
+          upx --best --lzma banana/${{ matrix.output }}
 
-      - name: 📤 Upload final compressed binary
+      - name: 📤 Upload compressed binary
         uses: actions/upload-artifact@v4
         with:
-          name: banana-${{ matrix.os }}-${{ github.run_id }}
-          path: banana/banana-*
+          name: ${{ matrix.output }}-${{ github.run_id }}
+          path: banana/${{ matrix.output }}
