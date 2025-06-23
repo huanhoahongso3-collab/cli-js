@@ -1,4 +1,4 @@
-name: Build Banana CLI (Node 10 Cross-Platform)
+name: Build Banana CLI for All Platforms (Node.js 10)
 
 on:
   push:
@@ -9,7 +9,7 @@ on:
 
 jobs:
   build:
-    name: Build for ${{ matrix.target }}
+    name: Build ${{ matrix.name }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -22,22 +22,22 @@ jobs:
             name: banana-macos
 
     steps:
-      - name: 📥 Checkout repo
+      - name: 📥 Checkout
         uses: actions/checkout@v3
 
-      - name: 🧰 Setup Node.js (for pkg & deps)
+      - name: 🧰 Setup Node.js (for installing pkg & deps)
         uses: actions/setup-node@v3
         with:
           node-version: 10
 
-      - name: 📦 Install pkg
-        run: npm install -g pkg
+      - name: 📦 Install pkg@4.5.1
+        run: npm install -g pkg@4.5.1
 
       - name: 📦 Install dependencies
         working-directory: banana
         run: npm install
 
-      - name: 🔨 Build standalone binary
+      - name: 🔨 Build binary with Node.js 10
         working-directory: banana
         run: |
           pkg . --targets ${{ matrix.target }} --output ${{ matrix.name }}
@@ -45,11 +45,10 @@ jobs:
       - name: 🗜️ Compress with UPX
         run: |
           sudo apt-get update && sudo apt-get install -y upx-ucl
-          upx --best --lzma banana/${{ matrix.name }}
+          upx --best banana/${{ matrix.name }}
 
-      - name: 📤 Upload compressed binary
+      - name: 📤 Upload binary
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.name }}-${{ github.run_id }}
           path: banana/${{ matrix.name }}
-          if-no-files-found: error
