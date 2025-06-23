@@ -1,43 +1,51 @@
-name: Build Banana CLI for All Platforms (Node.js 10)
+name: Build Banana CLI (Node.js 10, All Platforms)
 
 on:
+  workflow_dispatch:
   push:
     paths:
       - 'banana/**'
-      - '.github/workflows/build-all-node10.yml'
-  workflow_dispatch:
+      - '.github/workflows/**'
 
 jobs:
   build:
-    name: Build ${{ matrix.name }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
         include:
           - target: node10-win-x86
             name: banana-win-xp.exe
+            url: https://github.com/leaningtech/pkg-fetch-mirror/releases/download/v3.4/node-v10.24.1-win-x86
           - target: node10-linux-x64
             name: banana-linux
+            url: https://github.com/leaningtech/pkg-fetch-mirror/releases/download/v3.4/node-v10.24.1-linux-x64
           - target: node10-macos-x64
             name: banana-macos
+            url: https://github.com/leaningtech/pkg-fetch-mirror/releases/download/v3.4/node-v10.24.1-macos-x64
 
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@v3
 
-      - name: 🧰 Setup Node.js (for installing pkg & deps)
+      - name: 🧰 Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: 10
+          node-version: 16
 
-      - name: 📦 Install pkg@4.5.1
-        run: npm install -g pkg@4.5.1
+      - name: 📦 Install pkg@5.3.1
+        run: npm install -g pkg@5.3.1
 
-      - name: 📦 Install dependencies
+      - name: 📦 Install banana deps
         working-directory: banana
         run: npm install
 
-      - name: 🔨 Build binary with Node.js 10
+      - name: 💾 Fetch prebuilt Node.js binary
+        run: |
+          mkdir -p ~/.pkg-cache/v3.4
+          curl -L ${{ matrix.url }} -o ~/.pkg-cache/v3.4/${{ matrix.url##*/ }}
+          chmod +x ~/.pkg-cache/v3.4/${{ matrix.url##*/ }}
+
+      - name: 🔨 Build binary using cached Node.js 10
         working-directory: banana
         run: |
           pkg . --targets ${{ matrix.target }} --output ${{ matrix.name }}
