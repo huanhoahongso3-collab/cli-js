@@ -47,7 +47,7 @@ jobs:
       - name: 🗜️ Compress binary with UPX
         run: |
           sudo apt-get update && sudo apt-get install -y upx-ucl
-          upx --best --lzma banana/${{ matrix.output }}
+          upx --best --lzma banana/${{ matrix.output }} --force-macos
 
       - name: 📤 Upload compressed binary
         uses: actions/upload-artifact@v4
