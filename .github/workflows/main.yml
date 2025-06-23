@@ -1,4 +1,4 @@
-name: Build Banana CLI (Node.js 10, All Platforms)
+name: Build Banana CLI (Win 7+, Linux, macOS)
 
 on:
   workflow_dispatch:
@@ -13,51 +13,40 @@ jobs:
     strategy:
       matrix:
         include:
-          - target: node10-win-x86
-            name: banana-win-xp.exe
-            url: https://github.com/leaningtech/pkg-fetch-mirror/releases/download/v3.4/node-v10.24.1-win-x86
-          - target: node10-linux-x64
+          - target: node13-win-x64
+            name: banana-win7.exe
+          - target: node16-linux-x64
             name: banana-linux
-            url: https://github.com/leaningtech/pkg-fetch-mirror/releases/download/v3.4/node-v10.24.1-linux-x64
-          - target: node10-macos-x64
+          - target: node16-macos-x64
             name: banana-macos
-            url: https://github.com/leaningtech/pkg-fetch-mirror/releases/download/v3.4/node-v10.24.1-macos-x64
 
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@v3
 
-      - name: 🧰 Setup Node.js
+      - name: 🧰 Setup Node.js for pkg + install
         uses: actions/setup-node@v3
         with:
-          node-version: 16
+          node-version: 18
 
-      - name: 📦 Install pkg@5.3.1
-        run: npm install -g pkg@5.3.1
+      - name: 📦 Install pkg
+        run: npm install -g pkg
 
-      - name: 📦 Install banana deps
+      - name: 📦 Install Banana CLI dependencies
         working-directory: banana
         run: npm install
 
-      - name: 💾 Fetch prebuilt Node.js binary
-        run: |
-          mkdir -p "$HOME/.pkg-cache/v3.2"
-          platform="${{ matrix.target }}"
-          arch="${platform#node10-}"
-          curl -L "${{ matrix.url }}" -o "$HOME/.pkg-cache/v3.2/fetched-v10.24.1-${arch}"
-          chmod +x "$HOME/.pkg-cache/v3.2/fetched-v10.24.1-${arch}"
-
-      - name: 🔨 Build binary using cached Node.js 10
+      - name: 🔨 Build binary with pkg
         working-directory: banana
         run: |
           pkg . --targets ${{ matrix.target }} --output ${{ matrix.name }}
 
-      - name: 🗜️ Compress with UPX
+      - name: 🗜️ Compress binary with UPX
         run: |
           sudo apt-get update && sudo apt-get install -y upx-ucl
-          upx --best banana/${{ matrix.name }}
+          upx --best --lzma banana/${{ matrix.name }}
 
-      - name: 📤 Upload binary
+      - name: 📤 Upload final binary
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.name }}-${{ github.run_id }}
