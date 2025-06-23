@@ -1,0 +1,13 @@
+{
+  "name": "banana",
+  "version": "1.0.0-js",
+  "description": "Image to ASCII converter",
+  "bin": "banana.js",
+  "scripts": {},
+  "dependencies": {
+    "jimp": "^0.16.1",
+    "commander": "^11.0.0",
+    "clipboardy": "^3.0.0"
+  }
+}
+
