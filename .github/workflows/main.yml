@@ -1,48 +1,55 @@
-name: Build Banana CLI
+name: Build Banana CLI (Node 10 Cross-Platform)
 
 on:
   push:
     paths:
       - 'banana/**'
-      - '.github/workflows/build-banana.yml'
+      - '.github/workflows/build-all-node10.yml'
   workflow_dispatch:
 
 jobs:
   build:
-    name: Build on ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
+    name: Build for ${{ matrix.target }}
+    runs-on: ubuntu-latest
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-        node: [16]
+        include:
+          - target: node10-win-x86
+            name: banana-win-xp.exe
+          - target: node10-linux-x64
+            name: banana-linux
+          - target: node10-macos-x64
+            name: banana-macos
 
     steps:
-      - name: 📦 Checkout Repository
+      - name: 📥 Checkout repo
         uses: actions/checkout@v3
 
-      - name: 🔧 Setup Node.js
+      - name: 🧰 Setup Node.js (for pkg & deps)
         uses: actions/setup-node@v3
         with:
-          node-version: ${{ matrix.node }}
+          node-version: 10
 
-      - name: 📥 Install pkg
+      - name: 📦 Install pkg
         run: npm install -g pkg
 
-      - name: 📦 Install banana dependencies
+      - name: 📦 Install dependencies
         working-directory: banana
         run: npm install
 
-      - name: 🛠️ Build executable with pkg
+      - name: 🔨 Build standalone binary
         working-directory: banana
         run: |
-          OS_NAME="${{ runner.os == 'Linux' && 'linux' || runner.os == 'Windows' && 'win' || 'macos' }}"
-          OUTPUT_NAME="banana-${OS_NAME}"
-          pkg . --targets node${{ matrix.node }}-${OS_NAME}-x64 --output $OUTPUT_NAME
+          pkg . --targets ${{ matrix.target }} --output ${{ matrix.name }}
 
-      - name: 📤 Upload binary artifact
+      - name: 🗜️ Compress with UPX
+        run: |
+          sudo apt-get update && sudo apt-get install -y upx-ucl
+          upx --best --lzma banana/${{ matrix.name }}
+
+      - name: 📤 Upload compressed binary
         uses: actions/upload-artifact@v4
         with:
-          name: banana-${{ runner.os }}-${{ github.run_id }}
-          path: banana/banana-*
+          name: ${{ matrix.name }}-${{ github.run_id }}
+          path: banana/${{ matrix.name }}
           if-no-files-found: error
-          overwrite: true
