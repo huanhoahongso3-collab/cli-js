@@ -1,0 +1,43 @@
+name: Build Banana CLI
+
+on:
+  push:
+    paths:
+      - 'banana/**'
+      - '.github/workflows/build-banana.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        node-version: [16]
+    name: Build for ${{ matrix.os }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Install pkg
+        run: npm install -g pkg
+
+      - name: Install dependencies
+        working-directory: banana
+        run: npm install
+
+      - name: Build executable
+        working-directory: banana
+        run: |
+          pkg . --targets node${{ matrix.node-version }}-${{ runner.os == 'Windows' && 'win' || runner.os == 'macOS' && 'macos' || 'linux' }}-x64 --output banana-${{ runner.os }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: banana-${{ runner.os }}
+          path: banana/banana-*
